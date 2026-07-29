@@ -1,0 +1,25 @@
+SFCC/
+│
+├── main.py                 # Starts the application
+├── config.py               # Colors & settings
+├── database.py             # SQLite functions
+├── requirements.txt
+│
+├── assets/
+│   ├── logo.png
+│   └── icons/
+│
+├── data/
+│   └── finance.db
+│
+├── pages/
+│   ├── dashboard.py
+│   ├── calendar.py
+│   ├── transactions.py
+│   ├── investments.py
+│   ├── reports.py
+│   └── settings.py
+│
+└── widgets/
+    ├── sidebar.py
+    └── cards.py
