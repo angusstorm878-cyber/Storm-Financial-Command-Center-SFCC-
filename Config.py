@@ -1,0 +1,16 @@
+APP_NAME = "Storm Financial Command Center"
+
+WIDTH = 1400
+HEIGHT = 850
+
+BACKGROUND = "#1E1E1E"
+SIDEBAR = "#252526"
+
+CARD = "#2D2D30"
+
+BLUE = "#007ACC"
+GREEN = "#16C60C"
+RED = "#D13438"
+
+TEXT = "#FFFFFF"
+SUBTEXT = "#AAAAAA"
