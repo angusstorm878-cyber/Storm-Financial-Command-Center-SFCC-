@@ -40,12 +40,14 @@ class Sidebar(ctk.CTkFrame):
             "Calendar",
             "Budgets",
             "Transactions",
+            "Receipts",
+            "Recurring",
             "Investments",
             "Income",
             "Reports",
             "Goals",
             "Settings",
-            "Recurring"
+            
         ]
 
 

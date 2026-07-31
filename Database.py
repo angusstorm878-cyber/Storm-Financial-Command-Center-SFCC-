@@ -1,13 +1,21 @@
 import sqlite3
 from datetime import datetime
 
+from migrations import run_migrations
+
 
 DB_NAME = "data/finance.db"
 
 
 def connect():
 
-    return sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME)
+
+    run_migrations(
+        conn
+    )
+
+    return conn
 
 
 
@@ -1491,8 +1499,8 @@ def add_receipt(
         transaction_id,
         vendor,
         amount,
-        file_path,
-        notes=""
+        notes,
+        file_path=""
 ):
 
     conn = connect()

@@ -17,6 +17,7 @@ from pages.settings import SettingsPage
 from pages.budgets import BudgetsPage
 from pages.income import IncomePage
 from pages.recurring import RecurringPage
+from pages.receipts import ReceiptsPage
 
 
 pages = {
@@ -29,8 +30,8 @@ pages = {
     "Settings": SettingsPage,
     "Budgets": BudgetsPage,
     "Income": IncomePage,
-    "Recurring": RecurringPage
-}
+    "Recurring": RecurringPage,
+    "Receipts": ReceiptsPage}
 
 
 initialize_database()
