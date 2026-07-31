@@ -4,6 +4,7 @@ import config
 
 from database import initialize_database
 from widgets.sidebar import Sidebar
+from pages.dashboard import DashboardPage
 
 initialize_database()
 
@@ -21,14 +22,14 @@ app.grid_rowconfigure(0, weight=1)
 sidebar = Sidebar(app)
 sidebar.grid(row=0, column=0, sticky="ns")
 
-content = ctk.CTkFrame(app)
-content.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
+content = DashboardPage(app)
 
-welcome = ctk.CTkLabel(
-    content,
-    text="Welcome to Storm Financial Command Center",
-    font=("Segoe UI", 28, "bold")
+content.grid(
+    row=0,
+    column=1,
+    sticky="nsew",
+    padx=20,
+    pady=20
 )
-welcome.pack(pady=50)
 
 app.mainloop()
