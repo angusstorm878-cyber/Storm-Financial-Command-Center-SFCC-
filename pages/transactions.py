@@ -6,7 +6,7 @@ class DashboardPage(ctk.CTkFrame):
 
         label = ctk.CTkLabel(
             self,
-            text="Dashboard",
+            text="Transactions",
             font=("Segoe UI", 30, "bold")
         )
         label.pack(expand=True)
