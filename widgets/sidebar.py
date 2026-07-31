@@ -13,7 +13,7 @@ class Sidebar(ctk.CTkFrame):
 
 
         self.grid_rowconfigure(
-            11,
+            13,
             weight=1
         )
 
@@ -45,6 +45,7 @@ class Sidebar(ctk.CTkFrame):
             "Reports",
             "Goals",
             "Settings",
+            "Recurring"
         ]
 
 

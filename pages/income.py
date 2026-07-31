@@ -4,7 +4,8 @@ from database import (
     add_income_forecast,
     get_income_forecasts,
     get_actual_income,
-    get_income_variance
+    get_income_variance,
+    delete_income_forecast
 )
 
 
@@ -22,11 +23,27 @@ class IncomePage(ctk.CTkFrame):
         )
 
 
+        self.grid_rowconfigure(
+            3,
+            weight=1
+        )
+
+
+
+        # ==========================
+        # TITLE
+        # ==========================
+
         title = ctk.CTkLabel(
             self,
             text="Income Forecast",
-            font=("Segoe UI", 32, "bold")
+            font=(
+                "Segoe UI",
+                32,
+                "bold"
+            )
         )
+
 
         title.grid(
             row=0,
@@ -46,6 +63,7 @@ class IncomePage(ctk.CTkFrame):
             self
         )
 
+
         input_frame.grid(
             row=1,
             column=0,
@@ -61,6 +79,7 @@ class IncomePage(ctk.CTkFrame):
             placeholder_text="Income Source"
         )
 
+
         self.source_entry.grid(
             row=0,
             column=0,
@@ -74,6 +93,7 @@ class IncomePage(ctk.CTkFrame):
             input_frame,
             placeholder_text="Expected Amount"
         )
+
 
         self.amount_entry.grid(
             row=0,
@@ -90,6 +110,7 @@ class IncomePage(ctk.CTkFrame):
             command=self.save_forecast
         )
 
+
         save_button.grid(
             row=0,
             column=2,
@@ -99,17 +120,58 @@ class IncomePage(ctk.CTkFrame):
 
 
 
+        refresh_button = ctk.CTkButton(
+            input_frame,
+            text="Refresh",
+            command=self.load_income
+        )
+
+
+        refresh_button.grid(
+            row=0,
+            column=3,
+            padx=10,
+            pady=10
+        )
+
+
+
         # ==========================
-        # SUMMARY SECTION
+        # SUMMARY
         # ==========================
 
-        self.summary = ctk.CTkTextbox(
+        self.summary = ctk.CTkLabel(
             self,
-            height=250
+            text="",
+            font=(
+                "Segoe UI",
+                18
+            ),
+            justify="left"
         )
+
 
         self.summary.grid(
             row=2,
+            column=0,
+            padx=20,
+            pady=10,
+            sticky="w"
+        )
+
+
+
+        # ==========================
+        # FORECAST LIST
+        # ==========================
+
+        self.forecast_container = ctk.CTkScrollableFrame(
+            self
+        )
+
+
+        self.forecast_container.grid(
+            row=3,
             column=0,
             padx=20,
             pady=20,
@@ -117,15 +179,14 @@ class IncomePage(ctk.CTkFrame):
         )
 
 
-        self.grid_rowconfigure(
-            2,
-            weight=1
-        )
-
 
         self.load_income()
 
 
+
+    # ==========================
+    # SAVE FORECAST
+    # ==========================
 
     def save_forecast(self):
 
@@ -166,15 +227,21 @@ class IncomePage(ctk.CTkFrame):
 
 
 
+    # ==========================
+    # LOAD PAGE
+    # ==========================
+
     def load_income(self):
 
-        self.summary.delete(
-            "1.0",
-            "end"
-        )
+
+        for widget in self.forecast_container.winfo_children():
+
+            widget.destroy()
+
 
 
         forecasts = get_income_forecasts()
+
 
 
         expected = sum(
@@ -190,21 +257,118 @@ class IncomePage(ctk.CTkFrame):
 
 
 
-        self.summary.insert(
-            "end",
-            (
-                f"INCOME FORECAST\n"
-                f"=====================\n\n"
-
-                f"Expected Income:\n"
-                f"${expected:,.2f}\n\n"
-
-                f"Actual Income:\n"
-                f"${actual:,.2f}\n\n"
-
-                f"Variance:\n"
-                f"${variance:,.2f}\n\n"
-
-                f"=====================\n"
+        self.summary.configure(
+            text=(
+                f"Expected Income: ${expected:,.2f}\n"
+                f"Actual Income: ${actual:,.2f}\n"
+                f"Variance: ${variance:,.2f}"
             )
         )
+
+
+
+        if not forecasts:
+
+            empty = ctk.CTkLabel(
+                self.forecast_container,
+                text="No income forecasts created."
+            )
+
+
+            empty.pack(
+                pady=20
+            )
+
+
+            return
+
+
+
+        for income in forecasts:
+
+            self.create_income_card(
+                income
+            )
+
+
+
+    # ==========================
+    # INCOME CARD
+    # ==========================
+
+    def create_income_card(
+            self,
+            income
+    ):
+
+
+        income_id = income[0]
+
+        source = income[1]
+
+        amount = income[2]
+
+
+        card = ctk.CTkFrame(
+            self.forecast_container,
+            corner_radius=12
+        )
+
+
+        card.pack(
+            fill="x",
+            padx=10,
+            pady=10
+        )
+
+
+
+        label = ctk.CTkLabel(
+            card,
+            text=(
+                f"{source}\n"
+                f"Expected: ${amount:,.2f}"
+            ),
+            font=(
+                "Segoe UI",
+                18,
+                "bold"
+            ),
+            justify="left"
+        )
+
+
+        label.pack(
+            side="left",
+            padx=20,
+            pady=15
+        )
+
+
+
+        delete_button = ctk.CTkButton(
+            card,
+            text="Delete",
+            width=80,
+            command=lambda i=income_id: self.delete_income(i)
+        )
+
+
+        delete_button.pack(
+            side="right",
+            padx=20
+        )
+
+
+
+    def delete_income(
+            self,
+            income_id
+    ):
+
+        delete_income_forecast(
+            income_id
+        )
+
+
+        self.load_income()

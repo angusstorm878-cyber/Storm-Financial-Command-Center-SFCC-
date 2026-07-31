@@ -2,7 +2,9 @@ import customtkinter as ctk
 
 import config
 
-from database import initialize_database
+from database import (initialize_database, 
+process_recurring_transactions)
+
 from widgets.sidebar import Sidebar
 
 from pages.dashboard import DashboardPage
@@ -14,6 +16,7 @@ from pages.goals import GoalsPage
 from pages.settings import SettingsPage
 from pages.budgets import BudgetsPage
 from pages.income import IncomePage
+from pages.recurring import RecurringPage
 
 
 pages = {
@@ -26,11 +29,13 @@ pages = {
     "Settings": SettingsPage,
     "Budgets": BudgetsPage,
     "Income": IncomePage,
+    "Recurring": RecurringPage
 }
 
 
 initialize_database()
 
+process_recurring_transactions
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
