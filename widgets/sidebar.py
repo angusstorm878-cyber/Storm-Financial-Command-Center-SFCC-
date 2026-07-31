@@ -2,7 +2,9 @@ import customtkinter as ctk
 
 
 class Sidebar(ctk.CTkFrame):
-    def __init__(self, parent):
+
+    def __init__(self, parent, callback):
+
         super().__init__(parent, width=220, corner_radius=0)
 
         self.grid_rowconfigure(8, weight=1)
@@ -12,6 +14,7 @@ class Sidebar(ctk.CTkFrame):
             text="Storm\nFinancial\nCommand Center",
             font=("Segoe UI", 20, "bold")
         )
+
         title.grid(row=0, column=0, padx=20, pady=(20, 30))
 
         buttons = [
@@ -24,17 +27,26 @@ class Sidebar(ctk.CTkFrame):
             "Settings"
         ]
 
-        for index, text in enumerate(buttons, start=1):
+        for index, page in enumerate(buttons, start=1):
+
             button = ctk.CTkButton(
                 self,
-                text=text,
-                width=180
+                text=page,
+                width=180,
+                command=lambda p=page: callback(p)
             )
-            button.grid(row=index, column=0, padx=20, pady=5)
+
+            button.grid(
+                row=index,
+                column=0,
+                padx=20,
+                pady=5
+            )
 
         status = ctk.CTkLabel(
             self,
             text="● System Online",
             text_color="lightgreen"
         )
+
         status.grid(row=9, column=0, pady=20)

@@ -4,12 +4,32 @@ import config
 
 from database import initialize_database
 from widgets.sidebar import Sidebar
+
 from pages.dashboard import DashboardPage
+from pages.calendar import CalendarPage
+from pages.transactions import TransactionsPage
+from pages.investments import InvestmentsPage
+from pages.reports import ReportsPage
+from pages.goals import GoalsPage
+from pages.settings import SettingsPage
+
+
+pages = {
+    "Dashboard": DashboardPage,
+    "Calendar": CalendarPage,
+    "Transactions": TransactionsPage,
+    "Investments": InvestmentsPage,
+    "Reports": ReportsPage,
+    "Goals": GoalsPage,
+    "Settings": SettingsPage,
+}
+
 
 initialize_database()
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
+
 
 app = ctk.CTk()
 
@@ -19,17 +39,39 @@ app.geometry(f"{config.WIDTH}x{config.HEIGHT}")
 app.grid_columnconfigure(1, weight=1)
 app.grid_rowconfigure(0, weight=1)
 
-sidebar = Sidebar(app)
-sidebar.grid(row=0, column=0, sticky="ns")
 
-content = DashboardPage(app)
+content = None
 
-content.grid(
+
+def show_page(page_name):
+    global content
+
+    if content:
+        content.destroy()
+
+    page_class = pages[page_name]
+
+    content = page_class(app)
+
+    content.grid(
+        row=0,
+        column=1,
+        sticky="nsew",
+        padx=20,
+        pady=20
+    )
+
+
+sidebar = Sidebar(app, show_page)
+
+sidebar.grid(
     row=0,
-    column=1,
-    sticky="nsew",
-    padx=20,
-    pady=20
+    column=0,
+    sticky="ns"
 )
+
+
+show_page("Dashboard")
+
 
 app.mainloop()
