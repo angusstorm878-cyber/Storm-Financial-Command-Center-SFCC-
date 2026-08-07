@@ -1,8 +1,10 @@
 import customtkinter as ctk
-
+from datetime import datetime
+from widgets.transactions_card import TransactionsCard
 from database import (
     add_transaction,
     get_transactions,
+    get_vendor_memory,
     delete_transaction
 )
 
@@ -13,14 +15,26 @@ class TransactionsPage(ctk.CTkFrame):
 
         super().__init__(parent)
 
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
 
+        self.grid_columnconfigure(
+            0,
+            weight=1
+        )
+
+        self.grid_rowconfigure(
+            2,
+            weight=1
+        )
+
+
+        # ==========================
+        # TITLE
+        # ==========================
 
         title = ctk.CTkLabel(
             self,
             text="Transactions",
-            font=("Segoe UI", 30, "bold")
+            font=("Segoe UI", 32, "bold")
         )
 
         title.grid(
@@ -32,9 +46,15 @@ class TransactionsPage(ctk.CTkFrame):
         )
 
 
-        entry_frame = ctk.CTkFrame(self)
+        # ==========================
+        # INPUT AREA
+        # ==========================
 
-        entry_frame.grid(
+        input_frame = ctk.CTkFrame(
+            self
+        )
+
+        input_frame.grid(
             row=1,
             column=0,
             padx=20,
@@ -44,154 +64,183 @@ class TransactionsPage(ctk.CTkFrame):
 
 
         self.description_entry = ctk.CTkEntry(
-            entry_frame,
+            input_frame,
             placeholder_text="Description"
         )
 
         self.description_entry.grid(
             row=0,
             column=0,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=10
+        )
+
+
+        self.description_entry.bind(
+            "<FocusOut>",
+            self.check_vendor_memory
         )
 
 
         self.category_entry = ctk.CTkEntry(
-            entry_frame,
+            input_frame,
             placeholder_text="Category"
         )
 
         self.category_entry.grid(
             row=0,
             column=1,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=10
         )
 
 
         self.amount_entry = ctk.CTkEntry(
-            entry_frame,
+            input_frame,
             placeholder_text="Amount"
         )
 
         self.amount_entry.grid(
             row=0,
             column=2,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=10
         )
 
+        self.date_entry = ctk.CTkEntry(
+    input_frame,
+    placeholder_text="YYYY-MM-DD"
+)
 
-        self.type_menu = ctk.CTkOptionMenu(
-            entry_frame,
+        self.date_entry.grid(
+    row=0,
+    column=4,
+    padx=10,
+    pady=10
+)
+
+        self.date_entry.insert(
+    0,
+    datetime.now().strftime("%Y-%m-%d")
+)
+        self.type_entry = ctk.CTkComboBox(
+            input_frame,
             values=[
-                "Income",
-                "Expense"
+                "Expense",
+                "Income"
             ]
         )
 
-        self.type_menu.grid(
+        self.type_entry.grid(
             row=0,
             column=3,
-            padx=5,
-            pady=5
+            padx=10,
+            pady=10
+        )
+
+
+        self.type_entry.set(
+            "Expense"
         )
 
 
         add_button = ctk.CTkButton(
-            entry_frame,
-            text="Add",
-            command=self.add_transaction
+            input_frame,
+            text="Add Transaction",
+            command=self.save_transaction
         )
 
         add_button.grid(
             row=0,
             column=4,
-            padx=5,
-            pady=5
-        )
-
-
-        self.transaction_box = ctk.CTkTextbox(
-            self,
-            height=300
-        )
-
-        self.transaction_box.grid(
-            row=2,
-            column=0,
-            padx=20,
-            pady=20,
-            sticky="nsew"
-        )
-
-
-        delete_frame = ctk.CTkFrame(self)
-
-        delete_frame.grid(
-            row=3,
-            column=0,
-            padx=20,
+            padx=10,
             pady=10
         )
 
 
-        self.delete_entry = ctk.CTkEntry(
-            delete_frame,
-            placeholder_text="Transaction ID"
+        # ==========================
+        # TRANSACTION DISPLAY
+        # ==========================
+
+        self.transaction_container = ctk.CTkScrollableFrame(
+    self
+)
+
+    self.transaction_container.grid(
+    row=2,
+    column=0,
+    padx=20,
+    pady=20,
+    sticky="nsew"
+)
+
+
+    self.load_transactions()
+
+
+
+    # ==========================
+    # VENDOR MEMORY
+    # ==========================
+
+    def check_vendor_memory(
+            self,
+            event=None
+    ):
+
+        vendor = self.description_entry.get()
+
+
+        if not vendor:
+
+            return
+
+
+        vendor_memory = get_vendor_memory(
+            vendor
         )
 
-        self.delete_entry.grid(
-            row=0,
-            column=0,
-            padx=5
-        )
+
+        if vendor_memory:
+
+            category = vendor_memory[2]
 
 
-        delete_button = ctk.CTkButton(
-            delete_frame,
-            text="Delete",
-            command=self.delete_transaction
-        )
-
-        delete_button.grid(
-            row=0,
-            column=1,
-            padx=5
-        )
+            self.category_entry.delete(
+                0,
+                "end"
+            )
 
 
-        refresh_button = ctk.CTkButton(
-            delete_frame,
-            text="Refresh",
-            command=self.load_transactions
-        )
-
-        refresh_button.grid(
-            row=0,
-            column=2,
-            padx=5
-        )
+            self.category_entry.insert(
+                0,
+                category
+            )
 
 
-        self.load_transactions()
 
+    # ==========================
+    # SAVE TRANSACTION
+    # ==========================
 
-    def add_transaction(self):
+    def save_transaction(self):
 
         description = self.description_entry.get()
+
         category = self.category_entry.get()
 
+        transaction_type = self.type_entry.get()
+
+
         try:
+
             amount = float(
                 self.amount_entry.get()
             )
 
         except ValueError:
+
             return
-
-
-        transaction_type = self.type_menu.get()
 
 
         add_transaction(
@@ -202,65 +251,53 @@ class TransactionsPage(ctk.CTkFrame):
         )
 
 
-        self.load_transactions()
-
-
-    def delete_transaction(self):
-
-        try:
-            transaction_id = int(
-                self.delete_entry.get()
-            )
-
-        except ValueError:
-            return
-
-
-        delete_transaction(
-            transaction_id
+        self.description_entry.delete(
+            0,
+            "end"
         )
 
+        self.category_entry.delete(
+            0,
+            "end"
+        )
 
-        self.load_transactions()
-
-
-    def load_transactions(self):
-
-        self.transaction_box.delete(
-            "0.0",
+        self.amount_entry.delete(
+            0,
             "end"
         )
 
 
-        transactions = get_transactions()
+        self.type_entry.set(
+            "Expense"
+        )
 
 
-        for transaction in transactions:
-
-            transaction_id = transaction[0]
-            date = transaction[1]
-            category = transaction[2]
-            description = transaction[3]
-            amount = transaction[4]
-            transaction_type = transaction[5]
+        self.load_transactions()
 
 
-            sign = "+"
 
-            if transaction_type == "Expense":
-                sign = "-"
+    # ==========================
+    # LOAD TRANSACTIONS
+    # ==========================
 
+    def load_transactions(self):
 
-            line = (
-                f"{transaction_id} | "
-                f"{date} | "
-                f"{category} | "
-                f"{description} | "
-                f"{sign}${amount:,.2f}\n"
-            )
+    for widget in self.transaction_container.winfo_children():
+        widget.destroy()
 
+    transactions = get_transactions()
 
-            self.transaction_box.insert(
-                "end",
-                line
-            )
+    for transaction in transactions:
+
+        card = TransactionCard(
+            self.transaction_container,
+            transaction,
+            refresh_callback=self.load_transactions
+        )
+
+        card.pack(
+            fill="x",
+            padx=10,
+            pady=6
+        )
+        

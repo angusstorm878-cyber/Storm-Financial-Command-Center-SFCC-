@@ -1,5 +1,9 @@
 import customtkinter as ctk
 
+import os
+
+from tkinter import filedialog
+
 from database import (
     add_receipt,
     get_receipts,
@@ -7,11 +11,15 @@ from database import (
 )
 
 
+
 class ReceiptsPage(ctk.CTkFrame):
 
     def __init__(self, parent):
 
         super().__init__(parent)
+
+
+        self.selected_file = ""
 
 
         self.grid_columnconfigure(
@@ -23,6 +31,7 @@ class ReceiptsPage(ctk.CTkFrame):
             2,
             weight=1
         )
+
 
 
         title = ctk.CTkLabel(
@@ -38,6 +47,7 @@ class ReceiptsPage(ctk.CTkFrame):
             pady=(20,10),
             sticky="w"
         )
+
 
 
         # ==========================
@@ -57,6 +67,7 @@ class ReceiptsPage(ctk.CTkFrame):
         )
 
 
+
         self.vendor_entry = ctk.CTkEntry(
             input_frame,
             placeholder_text="Vendor"
@@ -68,6 +79,7 @@ class ReceiptsPage(ctk.CTkFrame):
             padx=10,
             pady=10
         )
+
 
 
         self.amount_entry = ctk.CTkEntry(
@@ -83,6 +95,7 @@ class ReceiptsPage(ctk.CTkFrame):
         )
 
 
+
         self.notes_entry = ctk.CTkEntry(
             input_frame,
             placeholder_text="Notes"
@@ -96,6 +109,38 @@ class ReceiptsPage(ctk.CTkFrame):
         )
 
 
+
+        attach_button = ctk.CTkButton(
+            input_frame,
+            text="Attach File",
+            command=self.select_file
+        )
+
+        attach_button.grid(
+            row=0,
+            column=3,
+            padx=10,
+            pady=10
+        )
+
+
+
+        self.file_label = ctk.CTkLabel(
+            input_frame,
+            text="No file selected"
+        )
+
+        self.file_label.grid(
+            row=1,
+            column=0,
+            columnspan=3,
+            padx=10,
+            pady=5,
+            sticky="w"
+        )
+
+
+
         save_button = ctk.CTkButton(
             input_frame,
             text="Save Receipt",
@@ -104,10 +149,11 @@ class ReceiptsPage(ctk.CTkFrame):
 
         save_button.grid(
             row=0,
-            column=3,
+            column=4,
             padx=10,
             pady=10
         )
+
 
 
         # ==========================
@@ -131,14 +177,42 @@ class ReceiptsPage(ctk.CTkFrame):
 
 
 
+    # ==========================
+    # FILE PICKER
+    # ==========================
+
+    def select_file(self):
+
+        file = filedialog.askopenfilename(
+            title="Select Receipt",
+            filetypes=[
+                (
+                    "Receipt Files",
+                    "*.png *.jpg *.jpeg *.pdf"
+                )
+            ]
+        )
+
+
+        if file:
+
+            self.selected_file = file
+
+            self.file_label.configure(
+                text=os.path.basename(file)
+            )
+
+
+
+    # ==========================
+    # SAVE RECEIPT
+    # ==========================
+
     def save_receipt(self):
 
         vendor = self.vendor_entry.get()
+
         notes = self.notes_entry.get()
-
-
-        if not vendor:
-            return
 
 
         try:
@@ -157,8 +231,10 @@ class ReceiptsPage(ctk.CTkFrame):
             vendor,
             amount,
             "",
+            self.selected_file,
             notes
         )
+
 
 
         self.vendor_entry.delete(
@@ -179,9 +255,21 @@ class ReceiptsPage(ctk.CTkFrame):
         )
 
 
+        self.selected_file = ""
+
+
+        self.file_label.configure(
+            text="No file selected"
+        )
+
+
         self.load_receipts()
 
 
+
+    # ==========================
+    # LOAD RECEIPTS
+    # ==========================
 
     def load_receipts(self):
 
@@ -190,7 +278,9 @@ class ReceiptsPage(ctk.CTkFrame):
             widget.destroy()
 
 
+
         receipts = get_receipts()
+
 
 
         if not receipts:
@@ -216,12 +306,17 @@ class ReceiptsPage(ctk.CTkFrame):
 
 
 
+    # ==========================
+    # RECEIPT CARD
+    # ==========================
+
     def create_receipt_card(
             self,
             receipt
     ):
 
         receipt_id = receipt[0]
+
         vendor = receipt[1]
 
 
@@ -231,12 +326,18 @@ class ReceiptsPage(ctk.CTkFrame):
                 receipt[2]
             )
 
-        except (ValueError, TypeError):
+        except:
 
             amount = 0
 
 
-        notes = receipt[3]
+
+        category = receipt[3]
+
+        file_path = receipt[4]
+
+        notes = receipt[5]
+
 
 
         card = ctk.CTkFrame(
@@ -250,24 +351,60 @@ class ReceiptsPage(ctk.CTkFrame):
         )
 
 
+
+        attachment = "No Attachment"
+
+
+        if file_path:
+
+            attachment = (
+                "📎 "
+                +
+                os.path.basename(file_path)
+            )
+
+
+
         info = ctk.CTkLabel(
             card,
             text=(
                 f"{vendor}\n"
                 f"${amount:,.2f}\n"
-                f"{notes}"
+                f"{notes}\n"
+                f"{attachment}"
             ),
             font=(
                 "Segoe UI",
                 15
-            )
+            ),
+            justify="left"
         )
+
 
         info.pack(
             side="left",
             padx=20,
             pady=10
         )
+
+
+
+        if file_path:
+
+            open_button = ctk.CTkButton(
+                card,
+                text="Open",
+                width=80,
+                command=lambda p=file_path:
+                    self.open_file(p)
+            )
+
+
+            open_button.pack(
+                side="right",
+                padx=5
+            )
+
 
 
         delete_button = ctk.CTkButton(
@@ -278,12 +415,32 @@ class ReceiptsPage(ctk.CTkFrame):
                 self.delete_receipt(i)
         )
 
+
         delete_button.pack(
             side="right",
             padx=20
         )
 
 
+
+    # ==========================
+    # OPEN FILE
+    # ==========================
+
+    def open_file(
+            self,
+            path
+    ):
+
+        if os.path.exists(path):
+
+            os.startfile(path)
+
+
+
+    # ==========================
+    # DELETE RECEIPT
+    # ==========================
 
     def delete_receipt(
             self,
@@ -293,5 +450,6 @@ class ReceiptsPage(ctk.CTkFrame):
         delete_receipt(
             receipt_id
         )
+
 
         self.load_receipts()

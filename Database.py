@@ -9,7 +9,7 @@ DB_NAME = "data/finance.db"
 
 def connect():
 
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, timeout=10)
 
     run_migrations(
         conn
@@ -147,8 +147,28 @@ CREATE TABLE IF NOT EXISTS receipts(
 
 )
 """)
-    conn.commit()
+    
+# ==========================
+# VENDOR MEMORY TABLE
+# ==========================
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS vendor_memory(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        vendor TEXT UNIQUE,
+
+        default_category TEXT,
+
+        default_description TEXT,
+
+        times_used INTEGER DEFAULT 1
+    )
+    """)
+
+    conn.commit()
+    
     conn.close()
 
 # ==========================
@@ -160,7 +180,8 @@ def add_transaction(
         description,
         category,
         amount,
-        transaction_type
+        transaction_type,
+        transaction_date
 ):
 
     conn = connect()
@@ -180,7 +201,7 @@ def add_transaction(
 
     VALUES
     (
-        DATE('now'),
+        ?,
         ?,
         ?,
         ?,
@@ -188,6 +209,7 @@ def add_transaction(
     )
     """,
     (
+        transaction_date,
         category,
         description,
         amount,
@@ -195,11 +217,154 @@ def add_transaction(
     ))
 
 
+    transaction_id = cur.lastrowid
+
+
     conn.commit()
 
     conn.close()
 
 
+    if transaction_type == "Expense":
+
+        learn_vendor(
+            description,
+            category,
+            description
+        )
+
+
+    return transaction_id
+
+    if transaction_type == "Expense":
+
+        learn_vendor(
+            description,
+            category,
+            description
+        )
+
+
+    return transaction_id
+
+def get_vendor_memory(
+        vendor
+):
+
+    conn = connect()
+
+    cur = conn.cursor()
+
+
+    cur.execute("""
+    SELECT *
+
+    FROM vendor_memory
+
+    WHERE vendor = ?
+
+    """,
+    (
+        vendor,
+    ))
+
+
+    result = cur.fetchone()
+
+
+    conn.close()
+
+
+    return result
+
+def learn_vendor(
+        vendor,
+        category,
+        description
+):
+
+    conn = connect()
+
+    cur = conn.cursor()
+
+
+    cur.execute("""
+    INSERT INTO vendor_memory
+    (
+        vendor,
+        default_category,
+        default_description
+    )
+
+    VALUES
+    (
+        ?,
+        ?,
+        ?
+    )
+
+    ON CONFLICT(vendor)
+
+    DO UPDATE SET
+
+        default_category = excluded.default_category,
+
+        default_description = excluded.default_description,
+
+        times_used = times_used + 1
+
+    """,
+    (
+        vendor,
+        category,
+        description
+    ))
+
+
+    conn.commit()
+
+    conn.close()
+
+def find_matching_transaction(
+        amount,
+        transaction_type="Expense"
+):
+
+    conn = connect()
+
+    cur = conn.cursor()
+
+
+    cur.execute("""
+    SELECT *
+
+    FROM transactions
+
+    WHERE amount = ?
+
+    AND type = ?
+
+    ORDER BY id DESC
+
+    LIMIT 1
+    """,
+    (
+        amount,
+        transaction_type
+    ))
+
+
+    result = cur.fetchone()
+
+
+    conn.close()
+
+
+    return result
+
+# ==========================
+# GET TRANSACTIONS
+# ==========================
 
 
 def get_transactions():
@@ -226,10 +391,6 @@ def get_transactions():
 
     return transactions
 
-
-
-
-
 def delete_transaction(transaction_id):
 
     conn = connect()
@@ -250,9 +411,6 @@ def delete_transaction(transaction_id):
     conn.commit()
 
     conn.close()
-
-
-
 
 
 # ==========================
@@ -1223,19 +1381,44 @@ def get_monthly_summary(
 
 
 
-    income = get_actual_income(
-        month,
-        year
-    )
-
-
-    expenses = 0
-
-
     conn = connect()
 
     cur = conn.cursor()
 
+
+
+    # ==========================
+    # INCOME
+    # ==========================
+
+    cur.execute("""
+    SELECT SUM(amount)
+
+    FROM transactions
+
+    WHERE type = 'Income'
+
+    AND strftime('%m', date) = ?
+
+    AND strftime('%Y', date) = ?
+
+    """,
+    (
+        f"{month:02d}",
+        str(year)
+    ))
+
+
+    income_result = cur.fetchone()[0]
+
+
+    income = income_result if income_result else 0
+
+
+
+    # ==========================
+    # EXPENSES
+    # ==========================
 
     cur.execute("""
     SELECT SUM(amount)
@@ -1255,24 +1438,29 @@ def get_monthly_summary(
     ))
 
 
-    result = cur.fetchone()[0]
+    expense_result = cur.fetchone()[0]
 
 
-    if result:
+    expenses = expense_result if expense_result else 0
 
-        expenses = result
 
 
     conn.close()
 
-
+    print(
+    "MONTHLY SUMMARY:",
+    {
+        "income": income,
+        "expenses": expenses,
+        "net": income - expenses
+    }
+)
 
     return {
         "income": income,
         "expenses": expenses,
         "net": income - expenses
     }
-
 
 
 
@@ -1496,11 +1684,12 @@ def get_upcoming_recurring():
 
 
 def add_receipt(
-        transaction_id,
         vendor,
         amount,
+        category,
+        file_path,
         notes,
-        file_path=""
+        transaction_id=None
 ):
 
     conn = connect()
@@ -1508,15 +1697,25 @@ def add_receipt(
     cur = conn.cursor()
 
 
+    matched_transaction = find_matching_transaction(
+        amount
+    )
+
+    if matched_transaction:
+
+        transaction_id = matched_transaction[0]
+
+
     cur.execute("""
     INSERT INTO receipts
     (
-        transaction_id,
         vendor,
         amount,
-        date,
+        category,
         file_path,
-        notes
+        notes,
+        date,
+        transaction_id
     )
 
     VALUES
@@ -1524,18 +1723,20 @@ def add_receipt(
         ?,
         ?,
         ?,
-        DATE('now'),
         ?,
+        ?,
+        DATE('now'),
         ?
     )
 
     """,
     (
-        transaction_id,
         vendor,
         amount,
+        category,
         file_path,
-        notes
+        notes,
+        transaction_id
     ))
 
 
@@ -1553,12 +1754,19 @@ def get_receipts():
 
 
     cur.execute("""
-    SELECT *
+    SELECT
+        id,
+        vendor,
+        amount,
+        category,
+        file_path,
+        notes,
+        date,
+        transaction_id
 
     FROM receipts
 
     ORDER BY id DESC
-
     """)
 
 
@@ -1589,6 +1797,34 @@ def delete_receipt(
     """,
     (
         receipt_id,
+    ))
+
+
+    conn.commit()
+
+    conn.close()
+
+def link_receipt_transaction(
+        receipt_id,
+        transaction_id
+):
+
+    conn = connect()
+
+    cur = conn.cursor()
+
+
+    cur.execute("""
+    UPDATE receipts
+
+    SET transaction_id = ?
+
+    WHERE id = ?
+
+    """,
+    (
+        transaction_id,
+        receipt_id
     ))
 
 

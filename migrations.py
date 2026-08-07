@@ -6,7 +6,7 @@ from datetime import datetime
 # CURRENT DATABASE VERSION
 # ==========================
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 
@@ -177,8 +177,41 @@ def apply_migration(
         migration_001(conn)
 
 
+    elif version == 2:
+
+        migration_002(conn)
+
+# ==========================
+# MIGRATION 002
+# ==========================
 
 
+def migration_002(conn):
+
+    cur = conn.cursor()
+
+
+    cur.execute("""
+    PRAGMA table_info(receipts)
+    """)
+
+
+    columns = [
+        column[1]
+        for column in cur.fetchall()
+    ]
+
+
+    if "category" not in columns:
+
+        cur.execute("""
+        ALTER TABLE receipts
+
+        ADD COLUMN category TEXT
+        """)
+
+
+    conn.commit()
 
 # ==========================
 # MIGRATION 001
