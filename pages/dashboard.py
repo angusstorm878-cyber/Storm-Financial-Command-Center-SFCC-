@@ -164,8 +164,6 @@ class DashboardPage(ctk.CTkFrame):
 
         summary = get_monthly_summary()
 
-        print("DASHBOARD SUMMARY:", summary)
-
         variance = get_income_variance()
 
 
@@ -348,8 +346,6 @@ class DashboardPage(ctk.CTkFrame):
     def refresh_dashboard(self):
 
         summary = get_monthly_summary()
-
-        print("DASHBOARD SUMMARY:", summary)
 
         variance = get_income_variance()
 
