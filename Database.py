@@ -9,22 +9,40 @@ DB_NAME = "data/finance.db"
 
 def connect():
 
-    conn = sqlite3.connect(DB_NAME, timeout=10)
-
-    run_migrations(
-        conn
+    return sqlite3.connect(
+        DB_NAME,
+        timeout=10
     )
 
-    return conn
 
+def connect():
+
+    return sqlite3.connect(
+        DB_NAME,
+        timeout=10
+    )
 
 
 def initialize_database():
 
+    # ==========================
+    # RUN MIGRATIONS
+    # ==========================
+
+    migration_conn = connect()
+
+    run_migrations(
+        migration_conn
+    )
+
+
+    # ==========================
+    # OPEN FRESH CONNECTION
+    # ==========================
+
     conn = connect()
 
     cur = conn.cursor()
-
 
 
     # ==========================
@@ -49,7 +67,6 @@ def initialize_database():
     """)
 
 
-
     # ==========================
     # BUDGETS TABLE
     # ==========================
@@ -70,7 +87,6 @@ def initialize_database():
         UNIQUE(category, month, year)
     )
     """)
-
 
 
     # ==========================
@@ -94,63 +110,65 @@ def initialize_database():
     )
     """)
 
-# ==========================
-# RECURRING TRANSACTIONS TABLE
-# ==========================
+
+    # ==========================
+    # RECURRING TRANSACTIONS TABLE
+    # ==========================
 
     cur.execute("""
-CREATE TABLE IF NOT EXISTS recurring_transactions(
+    CREATE TABLE IF NOT EXISTS recurring_transactions(
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    description TEXT,
+        description TEXT,
 
-    category TEXT,
+        category TEXT,
 
-    amount REAL,
+        amount REAL,
 
-    type TEXT,
+        type TEXT,
 
-    frequency TEXT,
+        frequency TEXT,
 
-    next_date TEXT,
+        next_date TEXT,
 
-    active INTEGER DEFAULT 1
-)
-""")
+        active INTEGER DEFAULT 1
+    )
+    """)
 
 
-
-# ==========================
-# RECEIPTS TABLE
-# ==========================
+    # ==========================
+    # RECEIPTS TABLE
+    # ==========================
 
     cur.execute("""
-CREATE TABLE IF NOT EXISTS receipts(
+    CREATE TABLE IF NOT EXISTS receipts(
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    transaction_id INTEGER,
+        transaction_id INTEGER,
 
-    vendor TEXT,
+        vendor TEXT,
 
-    amount REAL,
+        amount REAL,
 
-    date TEXT,
+        category TEXT,
 
-    file_path TEXT,
+        date TEXT,
 
-    notes TEXT,
+        file_path TEXT,
 
-    FOREIGN KEY(transaction_id)
-    REFERENCES transactions(id)
+        notes TEXT,
 
-)
-""")
-    
-# ==========================
-# VENDOR MEMORY TABLE
-# ==========================
+        FOREIGN KEY(transaction_id)
+        REFERENCES transactions(id)
+    )
+    """)
+
+
+    # ==========================
+    # VENDOR MEMORY TABLE
+    # ==========================
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS vendor_memory(
@@ -167,14 +185,14 @@ CREATE TABLE IF NOT EXISTS receipts(
     )
     """)
 
+
     conn.commit()
-    
+
     conn.close()
 
 # ==========================
 # TRANSACTIONS
 # ==========================
-
 
 def add_transaction(
         description,
@@ -236,16 +254,7 @@ def add_transaction(
 
     return transaction_id
 
-    if transaction_type == "Expense":
 
-        learn_vendor(
-            description,
-            category,
-            description
-        )
-
-
-    return transaction_id
 
 def get_vendor_memory(
         vendor
@@ -276,6 +285,8 @@ def get_vendor_memory(
 
 
     return result
+
+
 
 def learn_vendor(
         vendor,
@@ -325,6 +336,8 @@ def learn_vendor(
 
     conn.close()
 
+
+
 def find_matching_transaction(
         amount,
         transaction_type="Expense"
@@ -333,7 +346,6 @@ def find_matching_transaction(
     conn = connect()
 
     cur = conn.cursor()
-
 
     cur.execute("""
     SELECT *
