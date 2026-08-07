@@ -3,9 +3,8 @@ import customtkinter as ctk
 from database import (
     add_income_forecast,
     get_income_forecasts,
-    get_actual_income,
     get_income_variance,
-    delete_income_forecast
+    get_monthly_summary
 )
 
 
@@ -250,7 +249,9 @@ class IncomePage(ctk.CTkFrame):
         )
 
 
-        actual = get_actual_income()
+        summary = get_monthly_summary()
+
+        actual = summary["income"]
 
 
         variance = get_income_variance()

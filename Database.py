@@ -862,58 +862,6 @@ def delete_income_forecast(
     conn.close()
 
 
-
-
-
-def get_actual_income(
-        month=None,
-        year=None
-):
-
-    if month is None:
-        month = datetime.now().month
-
-
-    if year is None:
-        year = datetime.now().year
-
-
-
-    conn = connect()
-
-    cur = conn.cursor()
-
-
-    cur.execute("""
-    SELECT SUM(amount)
-
-    FROM transactions
-
-    WHERE type = 'Income'
-
-    AND strftime('%m', date) = ?
-
-    AND strftime('%Y', date) = ?
-
-    """,
-    (
-        f"{month:02d}",
-        str(year)
-    ))
-
-
-    result = cur.fetchone()[0]
-
-
-    conn.close()
-
-
-    return result if result else 0
-
-
-
-
-
 def get_income_variance(
         month=None,
         year=None
@@ -924,20 +872,18 @@ def get_income_variance(
         year
     )
 
-
     expected = sum(
-        item[2]
-        for item in forecasts
+        forecast[2]
+        for forecast in forecasts
     )
 
-
-    actual = get_actual_income(
+    summary = get_monthly_summary(
         month,
         year
     )
 
+    return summary["income"] - expected
 
-    return actual - expected
 # ==========================
 # RECURRING TRANSACTION FUNCTIONS
 # ==========================
